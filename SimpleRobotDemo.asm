@@ -24,7 +24,6 @@ Init:
 	OUT    RVELCMD
 	STORE  DVel        ; Reset API variables
 	STORE  DTheta
-	LOAD   Mask4
 	OUT    SONAREN     ; Disable sonar (optional)
 	OUT    BEEP        ; Stop any beeping (optional)
 	
@@ -64,10 +63,13 @@ WaitForUser:
 ;***************************************************************
 ;* Main code
 ;***************************************************************
+
+
+
+
+
 Main:
 	OUT    RESETPOS    ; reset the odometry to 0,0,0
-	LOADI  12
-	OUT    SONALARM 
 	; configure timer interrupt for the movement control code
 	LOADI  10          ; period = (10 ms * 10) = 0.1s, or 10Hz.
 	OUT    CTIMER      ; turn on timer peripheral
@@ -76,34 +78,35 @@ Main:
 	; code in that ISR will attempt to control the robot.
 	; If you want to take manual control of the robot,
 	; execute CLI &B0010 to disable the timer interrupt.
+	
+	LOADI  90
+	STORE  DTheta   
+	Sonar1:
+	LOAD   Mask5  ;loads 5 into the accumulator
+	OUT    SONAREN ;enables sonar 5
 
-Spin:	
-	LOADI   0
-	OUT    Theta
-	LOADI  -90
-	STORE  DTheta      ; use API to get robot to face 90 degrees
+	IN     DIST5 ;reads sonar 5 which is in mm 
+	ADDI   -610  ; 
+	JNEG   Die 
+	   
 	
-	
-	
-
-CheckIfSpun:
-	IN 		Theta
-	ADDI    90
-	CALL 	Abs
-	ADDI 	-3 
-	JNEG	CheckIfSpun
-	JUMP 	Spin
-	
-	
-	
-	
+	  ; if the distance between sonar 5 and some other object  is less 
+		             ;then 4ft than call subroutine die; use API to get robot to face 90 degrees
 TurnLoop:
 	IN     Theta
 	ADDI   -90
 	CALL   Abs         ; get abs(currentAngle - 90)
 	ADDI   -3
-	JPOS   TurnLoop    ; if angle error > 3, keep checking
+	JPOS   TurnLoop
+Sonar2:
+	LOAD   Mask5  ;loads 5 into the accumulator
+	OUT    SONAREN ;enables sonar 5
+	IN     DIST5 ;reads sonar 5 which is in mm 
+	ADDI   -1220  ; 
+	JNEG   Die  
+	JUMP   Main   ; if angle error > 3, keep checking
 	; at this point, robot should be within 3 degrees of 90
+	
 	LOAD   FMid
 	STORE  DVel        ; use API to move forward
 

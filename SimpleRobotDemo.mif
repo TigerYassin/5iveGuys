@@ -20,53 +20,53 @@ CONTENT
            007 : 988B;  -- 	OUT    RVELCMD
            008 : 1048;  -- 	STORE  DVel        ; Reset API variables
            009 : 1047;  -- 	STORE  DTheta
-           00A : 09D5;  -- 	LOAD   Mask4
-           00B : 98B2;  -- 	OUT    SONAREN     ; Disable sonar (optional)
-           00C : 980A;  -- 	OUT    BEEP        ; Stop any beeping (optional)
-           00D : 81AE;  -- 	CALL   SetupI2C    ; Configure the I2C to read the battery voltage
-           00E : 8190;  -- 	CALL   BattCheck   ; Get battery voltage (and end if too low).
-           00F : 9806;  -- 	OUT    LCD         ; Display battery voltage (hex, tenths of volts)
-           010 : 9003;  -- 	IN     XIO         ; XIO contains SAFETY signal
-           011 : 49D5;  -- 	AND    Mask4       ; SAFETY signal is bit 4
-           012 : 3818;  -- 	JPOS   WaitForUser ; If ready, jump to wait for PB3
-           013 : 9002;  -- 	IN     TIMER       ; We'll use the timer value to
-           014 : 49D2;  -- 	AND    Mask1       ;  blink LED17 as a reminder to toggle SW17
-           015 : 6008;  -- 	SHIFT  8           ; Shift over to LED17
-           016 : 9807;  -- 	OUT    XLEDS       ; LED17 blinks at 2.5Hz (10Hz/4)
-           017 : 2810;  -- 	JUMP   WaitForSafety
-           018 : 9002;  -- 	IN     TIMER       ; We'll blink the LEDs above PB3
-           019 : 49D2;  -- 	AND    Mask1
-           01A : 6005;  -- 	SHIFT  5           ; Both LEDG6 and LEDG7
-           01B : 11C4;  -- 	STORE  Temp        ; (overkill, but looks nice)
-           01C : 6001;  -- 	SHIFT  1
-           01D : 51C4;  -- 	OR     Temp
-           01E : 9807;  -- 	OUT    XLEDS
-           01F : 9003;  -- 	IN     XIO         ; XIO contains KEYs
-           020 : 49D3;  -- 	AND    Mask2       ; KEY3 mask (KEY0 is reset and can't be read)
-           021 : 3818;  -- 	JPOS   WaitForUser ; not ready (KEYs are active-low, hence JPOS)
-           022 : 09C6;  -- 	LOAD   Zero
-           023 : 9807;  -- 	OUT    XLEDS       ; clear LEDs once ready to continue
-           024 : 98C3;  -- 	OUT    RESETPOS    ; reset the odometry to 0,0,0
-           025 : B80C;  -- 	LOADI  12
-           026 : 98B0;  -- 	OUT    SONALARM 
-           027 : B80A;  -- 	LOADI  10          ; period = (10 ms * 10) = 0.1s, or 10Hz.
-           028 : 980C;  -- 	OUT    CTIMER      ; turn on timer peripheral
-           029 : A802;  -- 	SEI    &B0010      ; enable interrupts from source 2 (timer)
-           02A : B800;  -- 	LOADI   0
-           02B : 98C2;  -- 	OUT    Theta
-           02C : BFA6;  -- 	LOADI  -90
-           02D : 1047;  -- 	STORE  DTheta      ; use API to get robot to face 90 degrees
-           02E : 90C2;  -- 	IN 		Theta
-           02F : 685A;  -- 	ADDI    90
-           030 : 8090;  -- 	CALL 	Abs
-           031 : 6FFD;  -- 	ADDI 	-3 
-           032 : 302E;  -- 	JNEG	CheckIfSpun
-           033 : 282A;  -- 	JUMP 	Spin
-           034 : 90C2;  -- 	IN     Theta
-           035 : 6FA6;  -- 	ADDI   -90
-           036 : 8090;  -- 	CALL   Abs         ; get abs(currentAngle - 90)
-           037 : 6FFD;  -- 	ADDI   -3
-           038 : 3834;  -- 	JPOS   TurnLoop    ; if angle error > 3, keep checking
+           00A : 98B2;  -- 	OUT    SONAREN     ; Disable sonar (optional)
+           00B : 980A;  -- 	OUT    BEEP        ; Stop any beeping (optional)
+           00C : 81AE;  -- 	CALL   SetupI2C    ; Configure the I2C to read the battery voltage
+           00D : 8190;  -- 	CALL   BattCheck   ; Get battery voltage (and end if too low).
+           00E : 9806;  -- 	OUT    LCD         ; Display battery voltage (hex, tenths of volts)
+           00F : 9003;  -- 	IN     XIO         ; XIO contains SAFETY signal
+           010 : 49D5;  -- 	AND    Mask4       ; SAFETY signal is bit 4
+           011 : 3817;  -- 	JPOS   WaitForUser ; If ready, jump to wait for PB3
+           012 : 9002;  -- 	IN     TIMER       ; We'll use the timer value to
+           013 : 49D2;  -- 	AND    Mask1       ;  blink LED17 as a reminder to toggle SW17
+           014 : 6008;  -- 	SHIFT  8           ; Shift over to LED17
+           015 : 9807;  -- 	OUT    XLEDS       ; LED17 blinks at 2.5Hz (10Hz/4)
+           016 : 280F;  -- 	JUMP   WaitForSafety
+           017 : 9002;  -- 	IN     TIMER       ; We'll blink the LEDs above PB3
+           018 : 49D2;  -- 	AND    Mask1
+           019 : 6005;  -- 	SHIFT  5           ; Both LEDG6 and LEDG7
+           01A : 11C4;  -- 	STORE  Temp        ; (overkill, but looks nice)
+           01B : 6001;  -- 	SHIFT  1
+           01C : 51C4;  -- 	OR     Temp
+           01D : 9807;  -- 	OUT    XLEDS
+           01E : 9003;  -- 	IN     XIO         ; XIO contains KEYs
+           01F : 49D3;  -- 	AND    Mask2       ; KEY3 mask (KEY0 is reset and can't be read)
+           020 : 3817;  -- 	JPOS   WaitForUser ; not ready (KEYs are active-low, hence JPOS)
+           021 : 09C6;  -- 	LOAD   Zero
+           022 : 9807;  -- 	OUT    XLEDS       ; clear LEDs once ready to continue
+           023 : 98C3;  -- 	OUT    RESETPOS    ; reset the odometry to 0,0,0
+           024 : B80A;  -- 	LOADI  10          ; period = (10 ms * 10) = 0.1s, or 10Hz.
+           025 : 980C;  -- 	OUT    CTIMER      ; turn on timer peripheral
+           026 : A802;  -- 	SEI    &B0010      ; enable interrupts from source 2 (timer)
+           027 : B85A;  -- 	LOADI  90
+           028 : 1047;  -- 	STORE  DTheta   
+           029 : 09D6;  -- 	LOAD   Mask5  ;loads 5 into the accumulator
+           02A : 98B2;  -- 	OUT    SONAREN ;enables sonar 5
+           02B : 90AD;  -- 	IN     DIST5 ;reads sonar 5 which is in mm 
+           02C : 6D9E;  -- 	ADDI   -610  ; 
+           02D : 303C;  -- 	JNEG   Die 
+           02E : 90C2;  -- 	IN     Theta
+           02F : 6FA6;  -- 	ADDI   -90
+           030 : 8090;  -- 	CALL   Abs         ; get abs(currentAngle - 90)
+           031 : 6FFD;  -- 	ADDI   -3
+           032 : 382E;  -- 	JPOS   TurnLoop
+           033 : 09D6;  -- 	LOAD   Mask5  ;loads 5 into the accumulator
+           034 : 98B2;  -- 	OUT    SONAREN ;enables sonar 5
+           035 : 90AD;  -- 	IN     DIST5 ;reads sonar 5 which is in mm 
+           036 : 6B3C;  -- 	ADDI   -1220  ; 
+           037 : 303C;  -- 	JNEG   Die  
+           038 : 2823;  -- 	JUMP   Main   ; if angle error > 3, keep checking
            039 : 09E6;  -- 	LOAD   FMid
            03A : 1048;  -- 	STORE  DVel        ; use API to move forward
            03B : 283B;  -- 	JUMP   InfLoop
