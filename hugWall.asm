@@ -69,66 +69,97 @@ Main:
 	LOADI  10          ; period = (10 ms * 10) = 0.1s, or 10Hz.
 	OUT    CTIMER      ; turn on timer peripheral
 	SEI    &B0010  
+	
+	; Begin code to move towards a wall
 StartMovingForward:
-	OUT   RESETPOS    ; reset the odometry to 0,0,0
+	OUT   RESETPOS    	; reset the odometry to 0,0,0
     LOAD  Zero
     STORE DTheta
     LOAD  FSlow
-    STORE DVel	;move forward slow 
+    STORE DVel			; move forward slow 
 	
-	LOADI &B00001100
+    ; enable sonars 2&3 for wall detection, sonar 5 for reflector detection
+	LOADI &B00101100
 	OUT   SONAREN
-	LOAD  HalfFt ;set the alarm distance to half a foot 
+	LOAD  HalfMeter 	;set the alarm distance to .5m
 	OUT   SONALARM
+	
+WallReflDetect: 
+	IN  	SONALARM 		; What does sonalarm look like? 4 and 8 correspond to sensors 2 and 3, why?
+	; OUT 	SSEG1
+	STORE 	AlarmTrigger
+	IN 		DIST5			; load the sensor reading of sonar5 (i.e. the right sonar)
+	OUT		SSEG1
+	ADDI 	-600			; add a conservative distance of 600mm
+	JNEG 	RotateToRefl	; If something is at sonar 5, that means that a reflector was detected
+	LOAD	AlarmTrigger
+	JPOS 	StopAndTurn  	; Else if a bit has been set to positive then jump to turn to avoid the wall
+    JUMP  	WallReflDetect 	; Otherwise, continue reading the alarm and sonar5
+	
+    ; RotateToRefl assumes that the reflector is at 90 degrees clockwise to the bot
+    ; we have to figure out a check to make sure that we keep the front of the bot facing the reflector
+    ; Potential solutions:
+    ;	Continually read front sonars to see if distance is decreasing on either sonar 2 or 3, then make slight adjustments to the left or right
+    ;	Utilize the odometry and saved distance to make slight adjustments when distances are slightly skewed
+    ;	A combination of both
+RotateToRefl:
+	LOAD 	DIST5
+	STORE 	DistRefl		; store the distance from sonar5 to the reflector
+	;;;;;;;;;;;;;;;;;
+	; Potential use of that reflector distance
+	;;;;;;;;;;;;;;;;;
+	LOADI 	1				; are we in this subroutine?
+	OUT		SSEG1
+	LOADI 	&B0001100 		; would be used to enable just the front sonars
+	OUT		SONAREN
+	OUT		RESETPOS		; Reset odometry
+	LOADI 	-90				; turn the bot 90 degrees to face the reflector
+	STORE 	DTheta
+	CALL 	Wait1			; Wait two seconds to complete a turn
+	CALL 	Wait1
+	LOAD 	FSlow			; Move towards the reflector
+	STORE 	DVel
 
-ReadAlarm:
-	IN  SONALARM ;what does sonalarm look like 
-	OUT SSEG1
-	STORE AlarmTrigger
-	JPOS StopAndTurn  	; if a bit has been set to positive then jump to another subroutine
-    JUMP  ReadAlarm 	; otherwise, continue reading the alarm
+	; utilize the front sensor alarms to detect once the bot has reached .5m away from the reflector
+	; die after
+ForwardToRefl:
+	; Odometry implementation
+	; IN		XPOS
+	; SUB		DistRefl	; XPos - DistRefl
+	IN  	SONALARM 
+	;JNEG	ForwardtoRefl
+	JPOS 	Die				; Bot has reached 0.5m out from a reflector
+	JUMP 	ForwardToRefl
 	
 StopAndTurn:
 	LOAD  Zero  ;stop the movement API!
 	STORE  DVel
 	LOAD AlarmTrigger
-	OUT SSEG1 
+	JPOS LeftFaceWall
+	; OUT SSEG1 
 	;make sure that something triggered it!!
 	;out the alarm trigger to the seven segment display
     ;write a series of and statements that will check which sonar that the alarm triggered from
 	;and face toward it!
 	
 	; If the alarm is set on sonar2 (12 degrees left of forward), make it turn right to hug the wall i.e. 102 degrees)
-	; sona3 (12 degrees right of forward), turn right (78 degrees)
-	AND  Mask2   
-	JPOS Turn12Left
-	LOAD AlarmTrigger
-	AND  Mask3
-	JPOS Turn12Right
+	; sonar3 (12 degrees right of forward), turn right (78 degrees)
 	
-Turn12Left:
-    LOADI -102
-	STORE DTheta
-	JUMP  CheckThetaLeft ;instead of jumping to die i need to check if Dtheta abd theta have matched 
-Turn12Right:
-    LOADI -78
-	STORE DTheta
-	JUMP  CheckThetaRight
+
 	
-CheckThetaLeft:
+LeftFaceWall:
+    LOADI -90
+	STORE DTheta
+	JUMP  CheckTheta
+	
+; necessary because theta is always positive from 0-360, while dTheta can be negative
+; consider using GetThetaErr in the future, refer to MovementAPI for documentation. However, this is a reasonable fix for now.
+CheckTheta:
 	IN	 Theta 
-	ADDI -258
+	ADDI -270 
 	CALL Abs
 	ADDI -3
-	JPOS CheckThetaLeft
-	JUMP StartMovingForward
-	
-CheckThetaRight:
-	IN   Theta
-	ADDI -282
-	CALL Abs
-	ADDI -3
-	JPOS CheckThetaRight
+	JPOS CheckTheta
 	JUMP StartMovingForward
 	
 
@@ -559,7 +590,7 @@ dres16sR: DW 0 ; remainder result
 
 ;*******************************************************************************
 ; L2Estimate:  Pythagorean distance estimation
-; Written by Kevin Johnson.  No license or copyright applied.
+; Written by Kevin Johnson.  No license or copyright applied.f
 ; Warning: this is *not* an exact function.  I think it's most wrong
 ; on the axes, and maybe at 45 degrees.
 ; To use:
@@ -758,12 +789,12 @@ FMid:     DW 350       ; 350 is a medium speed
 RMid:     DW -350
 FFast:    DW 500       ; 500 is almost max speed (511 is max)
 RFast:    DW -500
+DistRefl: DW 0		   ; Distance of reflector in mm
 
 MinBatt:  DW 140       ; 14.0V - minimum safe battery voltage
 I2CWCmd:  DW &H1190    ; write one i2c byte, read one byte, addr 0x90
 I2CRCmd:  DW &H0190    ; write nothing, read one byte, addr 0x90
 AlarmTrigger: DW 0 ; this variable stores the sonar alarm that triggered the alarm distance
-HalfFt: DW 450 ;0.5 ft in mm
 DataArray:
 	DW 0
 ;***************************************************************
